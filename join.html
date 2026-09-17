@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joining GD Room | GD Analyzer</title>
+    <script>
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            let code = params.get('code') || params.get('room') || '';
+            if (!code) {
+                const parts = window.location.pathname.split('/').filter(Boolean);
+                if (parts.length > 0 && parts[parts.length - 1].startsWith('GD')) {
+                    code = parts[parts.length - 1];
+                }
+            }
+            const isSubfolder = window.location.pathname.startsWith('/gd-analyzer');
+            const target = isSubfolder ? 'pages/rooms.html' : 'gd-analyzer/pages/rooms.html';
+            const cleanCode = encodeURIComponent((code || '').trim().toUpperCase());
+            window.location.replace(`${target}?code=${cleanCode}&room=${cleanCode}`);
+        })();
+    </script>
+</head>
+<body style="background: #0b1329; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
+    <div style="text-align: center;">
+        <div style="width: 48px; height: 48px; border: 3px solid rgba(6, 182, 212, 0.2); border-top-color: #06b6d4; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1.25rem auto;"></div>
+        <p style="font-size: 1.1rem; color: #94a3b8;">Entering GD Discussion Room...</p>
+    </div>
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</body>
+</html>

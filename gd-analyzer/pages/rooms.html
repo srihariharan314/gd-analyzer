@@ -81,6 +81,9 @@
                     Enter the one-time code shared by your host to join the synchronized discussion.
                 </p>
 
+                <!-- Room Validation / Status Alert -->
+                <div id="roomStatusAlert" style="display: none; padding: 0.9rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; font-size: 0.92rem; font-weight: 600; text-align: left;"></div>
+
                 <div class="lagoon-input-group" style="text-align: left;">
                     <label class="lagoon-input-label">Your Name</label>
                     <input type="text" id="joinUserNameInput" class="lagoon-input" placeholder="e.g. Arun Kumar">
@@ -232,31 +235,64 @@
 
     <!-- Scripts -->
     <script type="module">
-        import { createHumanRoom, getRoomState, joinHumanRoom, generateWhatsAppShareUrl, getCurrentUser } from '../gd-service.js';
+        import { createHumanRoom, getRoomState, joinHumanRoom, generateProductionJoinUrl, generateWhatsAppShareUrl, getCurrentUser } from '../gd-service.js';
 
         let activeRoom = null;
         let countdownInterval = null;
         let pollInterval = null;
+
+        function showRoomStatus(msg, type = 'error') {
+            const el = document.getElementById('roomStatusAlert');
+            if (!el) return;
+            if (!msg) {
+                el.style.display = 'none';
+                el.innerHTML = '';
+                return;
+            }
+            el.style.display = 'block';
+            if (type === 'error') {
+                el.style.background = 'rgba(239, 68, 68, 0.15)';
+                el.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+                el.style.color = '#f87171';
+                el.innerHTML = `<i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i> <span>${msg}</span>`;
+            } else {
+                el.style.background = 'rgba(16, 185, 129, 0.15)';
+                el.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+                el.style.color = '#34d399';
+                el.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i> <span>${msg}</span>`;
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             const user = await getCurrentUser();
             const currentUserName = user?.displayName || user?.name || (user?.email ? user.email.split('@')[0] : 'Participant');
 
             const urlParams = new URLSearchParams(window.location.search);
-            const passedCode = urlParams.get('code');
+            let passedCode = (urlParams.get('code') || urlParams.get('room') || '').trim();
+            if (!passedCode) {
+                const parts = window.location.pathname.split('/').filter(Boolean);
+                if (parts.length > 0 && parts[parts.length - 1].startsWith('GD')) {
+                    passedCode = parts[parts.length - 1];
+                }
+            }
             const shouldCreate = urlParams.get('create');
             const passedTopic = urlParams.get('topic');
 
             if (passedCode) {
-                // If code is in URL, auto-fill join or open waiting room
                 document.getElementById('joinRoomCodeInput').value = passedCode.toUpperCase();
-                document.getElementById('joinUserNameInput').value = currentUserName;
-                
-                // Attempt join
-                const joinRes = joinHumanRoom(passedCode, currentUserName);
-                if (joinRes.success) {
-                    showWaitingLobby(joinRes.room);
+                document.getElementById('joinUserNameInput').value = (currentUserName !== 'Participant') ? currentUserName : '';
+
+                // Validate room state
+                const check = await getRoomState(passedCode);
+                if (check.isExpired || (check.error && check.error.toLowerCase().includes('expired'))) {
+                    showRoomStatus('This GD room has expired.', 'error');
+                    showEntryView();
+                } else if (!check.success) {
+                    showRoomStatus('Invalid GD room. Please check the invitation link.', 'error');
+                    showEntryView();
                 } else {
+                    // Valid active room: show existing joining interface
+                    showRoomStatus(`Active room found: "${check.room.topic}". Enter your name to join!`, 'success');
                     showEntryView();
                 }
             } else if (shouldCreate) {
@@ -294,10 +330,23 @@
             document.getElementById('roomCodeText').textContent = room.roomCode;
             document.getElementById('roomCapacityBadge').textContent = `${room.participants.length}/${room.maxParticipants} Participants`;
 
-            // WhatsApp link
+            // WhatsApp link and share handler
             const waUrl = generateWhatsAppShareUrl(room);
             const waBtn = document.getElementById('whatsAppShareBtn');
-            if (waBtn) waBtn.href = waUrl;
+            if (waBtn) {
+                waBtn.href = waUrl;
+                waBtn.onclick = (e) => {
+                    try {
+                        const win = window.open(waUrl, '_blank');
+                        if (!win || win.closed || typeof win.closed === 'undefined') {
+                            window.location.href = waUrl;
+                        }
+                    } catch {
+                        window.location.href = waUrl;
+                    }
+                    return false;
+                };
+            }
 
             renderWaitingParticipants(room.participants);
             startCountdownTimer();
@@ -350,9 +399,9 @@
             countdownInterval = setInterval(tick, 1000);
         }
 
-        function refreshRoomStatus() {
+        async function refreshRoomStatus() {
             if (!activeRoom) return;
-            const res = getRoomState(activeRoom.roomCode);
+            const res = await getRoomState(activeRoom.roomCode);
             if (res.success) {
                 activeRoom = res.room;
                 renderWaitingParticipants(res.room.participants);
@@ -394,20 +443,21 @@
             });
 
             // Submit Join Room
-            document.getElementById('submitJoinRoomBtn')?.addEventListener('click', () => {
+            document.getElementById('submitJoinRoomBtn')?.addEventListener('click', async () => {
                 const name = document.getElementById('joinUserNameInput').value.trim() || defaultUserName;
                 const code = document.getElementById('joinRoomCodeInput').value.trim().toUpperCase();
 
                 if (!code) {
-                    alert('Please enter a room code');
+                    showRoomStatus('Please enter a room code.', 'error');
                     return;
                 }
 
-                const res = joinHumanRoom(code, name);
+                const res = await joinHumanRoom(code, name);
                 if (res.success) {
+                    showRoomStatus('');
                     showWaitingLobby(res.room);
                 } else {
-                    alert(res.error || 'Could not join room');
+                    showRoomStatus(res.error || 'Invalid GD room. Please check the invitation link.', 'error');
                 }
             });
 
@@ -420,11 +470,20 @@
             });
 
             // Copy Link
-            document.getElementById('copyJoinLinkBtn')?.addEventListener('click', () => {
+            document.getElementById('copyJoinLinkBtn')?.addEventListener('click', async () => {
                 if (activeRoom) {
-                    const link = `${window.location.origin}/pages/rooms.html?code=${activeRoom.roomCode}`;
-                    navigator.clipboard.writeText(link);
-                    showToast('Invitation link copied to clipboard!');
+                    const link = generateProductionJoinUrl(activeRoom.roomCode);
+                    try {
+                        await navigator.clipboard.writeText(link);
+                    } catch {
+                        const ta = document.createElement('textarea');
+                        ta.value = link;
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                    }
+                    showToast('GD join link copied!');
                 }
             });
 

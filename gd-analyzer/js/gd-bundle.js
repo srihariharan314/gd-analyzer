@@ -628,12 +628,57 @@
     }
 
     // 7. Human Room Coordination
-    function createHumanRoom(hostName, topic, duration = 300, maxParticipants = 6) {
-        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        let code = "GD-";
-        for (let i = 0; i < 5; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+    const ROOM_EPOCH = 1785000000000;
 
+    function generateRoomChecksum(str) {
+        let hash = 0x811c9dc5;
+        for (let i = 0; i < str.length; i++) {
+            hash ^= str.charCodeAt(i);
+            hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+        }
+        hash = Math.abs(hash);
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        return chars[hash % chars.length] + chars[Math.floor(hash / chars.length) % chars.length];
+    }
+
+    function generateRoomCode(timeMs = Date.now()) {
+        const step = Math.floor((timeMs - ROOM_EPOCH) / 10000);
+        const timePart = step.toString(36).toUpperCase().padStart(4, '0');
+        const chk = generateRoomChecksum(timePart);
+        return `GD${timePart}${chk}`;
+    }
+
+    function getProductionBaseUrl() {
+        if (typeof window !== 'undefined') {
+            const meta = document.querySelector('meta[name="gd-production-url"]')?.getAttribute('content');
+            if (meta && !meta.includes('localhost')) return meta.replace(/\/+$/, '');
+            if (window.GD_PRODUCTION_URL && !window.GD_PRODUCTION_URL.includes('localhost')) {
+                return window.GD_PRODUCTION_URL.replace(/\/+$/, '');
+            }
+
+            const { origin, hostname } = window.location;
+            if (origin && !hostname.includes('localhost') && !hostname.includes('127.0.0.1') && !origin.startsWith('file:')) {
+                if (hostname.endsWith('.vercel.app')) {
+                    return 'https://gd-analyzer-sigma.vercel.app';
+                }
+                return origin;
+            }
+
+            return 'https://gd-analyzer-sigma.vercel.app';
+        }
+        return 'https://gd-analyzer-sigma.vercel.app';
+    }
+
+    function generateProductionJoinUrl(roomCode) {
+        const baseUrl = getProductionBaseUrl();
+        const cleanCode = (roomCode || "").toUpperCase().replace(/[^A-Z0-9]/g, '');
+        return `${baseUrl}/gd-analyzer/pages/rooms.html?code=${cleanCode}`;
+    }
+
+    function createHumanRoom(hostName, topic, duration = 180, maxParticipants = 6) {
         const now = Date.now();
+        const code = generateRoomCode(now);
+
         const room = {
             roomId: "room_" + now,
             roomCode: code,
@@ -649,21 +694,67 @@
 
         const rooms = JSON.parse(localStorage.getItem('gd_rooms') || '{}');
         rooms[code] = room;
+        const cleanKey = code.replace(/[^A-Z0-9]/g, '');
+        rooms[cleanKey] = room;
         localStorage.setItem('gd_rooms', JSON.stringify(rooms));
         return room;
     }
 
     function getRoomState(roomCode) {
         const code = (roomCode || "").toUpperCase().trim();
+        const clean = code.replace(/[^A-Z0-9]/g, '');
         const rooms = JSON.parse(localStorage.getItem('gd_rooms') || '{}');
-        const room = rooms[code];
-        if (!room) return { success: false, error: "Room not found." };
-
+        let room = rooms[clean] || rooms[code];
         const now = Date.now();
-        if (now > room.expiresAt && room.status === 'waiting') {
-            room.status = (room.participants.length >= 2) ? 'active' : 'expired';
-            rooms[code] = room;
+
+        if (!room) {
+            if (!clean.startsWith('GD') || clean.length < 7) {
+                return { success: false, error: "Invalid GD room. Please check the invitation link." };
+            }
+            const timePart = clean.slice(2, -2);
+            const chk = clean.slice(-2);
+            if (generateRoomChecksum(timePart) !== chk) {
+                return { success: false, error: "Invalid GD room. Please check the invitation link." };
+            }
+            const step = parseInt(timePart, 36);
+            if (isNaN(step)) {
+                return { success: false, error: "Invalid GD room. Please check the invitation link." };
+            }
+            const createdAt = ROOM_EPOCH + (step * 10000);
+            const expiresAt = createdAt + 120000;
+
+            if (createdAt > now + 60000 || createdAt < now - 86400000 * 7) {
+                return { success: false, error: "Invalid GD room. Please check the invitation link." };
+            }
+
+            if (now > expiresAt) {
+                return { success: false, error: "This GD room has expired.", isExpired: true };
+            }
+
+            room = {
+                roomId: "room_" + createdAt,
+                roomCode: clean,
+                hostName: "Host",
+                topic: "Will AI Replace Human Jobs or Create New Ones?",
+                duration: 300,
+                maxParticipants: 6,
+                createdAt: createdAt,
+                expiresAt: expiresAt,
+                status: "waiting",
+                participants: [
+                    { id: "p_host", name: "Host", isHost: true, avatarColor: "#06b6d4", joinedAt: createdAt }
+                ]
+            };
+            rooms[clean] = room;
             localStorage.setItem('gd_rooms', JSON.stringify(rooms));
+        }
+
+        if (now > room.expiresAt && room.status === 'waiting') {
+            room.status = 'expired';
+            rooms[clean] = room;
+            if (rooms[code]) rooms[code] = room;
+            localStorage.setItem('gd_rooms', JSON.stringify(rooms));
+            return { success: false, error: "This GD room has expired.", isExpired: true, room };
         }
 
         return {
@@ -671,45 +762,44 @@
             room,
             remainingSeconds: Math.max(0, Math.floor((room.expiresAt - now) / 1000)),
             isExpired: room.status === 'expired',
-            isActive: room.status === 'active'
+            isActive: room.status === 'active' || room.status === 'waiting'
         };
     }
 
     function joinHumanRoom(roomCode, participantName) {
-        const code = (roomCode || "").toUpperCase().trim();
-        const rooms = JSON.parse(localStorage.getItem('gd_rooms') || '{}');
-        const room = rooms[code];
-        if (!room) return { success: false, error: "Invalid room code." };
-
-        if (Date.now() > room.expiresAt && room.status === 'waiting') {
-            return { success: false, error: "This room invitation has expired." };
+        const state = getRoomState(roomCode);
+        if (!state.success) {
+            return { success: false, error: state.error || "Invalid GD room. Please check the invitation link." };
         }
 
-        const existing = room.participants.find(p => p.name.toLowerCase() === participantName.toLowerCase());
+        const room = state.room;
+        if (Date.now() > room.expiresAt && room.status === 'waiting') {
+            return { success: false, error: "This GD room has expired." };
+        }
+
+        const name = (participantName || "Participant").trim();
+        const existing = room.participants.find(p => p.name.toLowerCase() === name.toLowerCase());
         if (!existing) {
             const colors = ['#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#38bdf8', '#6366f1'];
             room.participants.push({
                 id: 'p_' + Date.now(),
-                name: participantName,
+                name: name,
                 isHost: false,
                 avatarColor: colors[room.participants.length % colors.length],
                 joinedAt: Date.now()
             });
-            rooms[code] = room;
+            const rooms = JSON.parse(localStorage.getItem('gd_rooms') || '{}');
+            rooms[room.roomCode] = room;
+            rooms[room.roomCode.replace(/[^A-Z0-9]/g, '')] = room;
             localStorage.setItem('gd_rooms', JSON.stringify(rooms));
         }
         return { success: true, room };
     }
 
     function generateWhatsAppShareUrl(room) {
-        const origin = window.location.origin.includes('file:') ? 'http://localhost:3000' : window.location.origin;
-        const joinUrl = `${origin}/pages/rooms.html?code=${room.roomCode}`;
-        const text = `🎯 *Join our Live Group Discussion on GD Analyzer!*
-📌 *Topic:* ${room.topic}
-🔑 *Room Code:* ${room.roomCode}
-⏱️ *Joining Window:* Next 2 Minutes
-🔗 *Join link:* ${joinUrl}`;
-        return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+        const joinUrl = generateProductionJoinUrl(room.roomCode);
+        const message = `Join my GD Discussion!\nTopic: ${room.topic}\nRoom Code: ${room.roomCode}\nJoin here:\n${joinUrl}\nThis GD room is available for a limited time.`;
+        return `https://wa.me/?text=${encodeURIComponent(message)}`;
     }
 
     // Expose onto global window object for universal availability
@@ -726,6 +816,7 @@
         createHumanRoom,
         getRoomState,
         joinHumanRoom,
+        generateProductionJoinUrl,
         generateWhatsAppShareUrl
     };
 
