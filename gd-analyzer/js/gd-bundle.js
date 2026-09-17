@@ -762,7 +762,8 @@
             room,
             remainingSeconds: Math.max(0, Math.floor((room.expiresAt - now) / 1000)),
             isExpired: room.status === 'expired',
-            isActive: room.status === 'active' || room.status === 'waiting'
+            isActive: room.status === 'active',
+            isWaiting: room.status === 'waiting'
         };
     }
 

@@ -335,16 +335,12 @@
             const waBtn = document.getElementById('whatsAppShareBtn');
             if (waBtn) {
                 waBtn.href = waUrl;
+                waBtn.setAttribute('target', '_blank');
+                waBtn.setAttribute('rel', 'noopener noreferrer');
                 waBtn.onclick = (e) => {
-                    try {
-                        const win = window.open(waUrl, '_blank');
-                        if (!win || win.closed || typeof win.closed === 'undefined') {
-                            window.location.href = waUrl;
-                        }
-                    } catch {
-                        window.location.href = waUrl;
-                    }
-                    return false;
+                    // Open in separate tab without redirecting the waiting room
+                    e.stopPropagation();
+                    return true;
                 };
             }
 
@@ -402,12 +398,13 @@
         async function refreshRoomStatus() {
             if (!activeRoom) return;
             const res = await getRoomState(activeRoom.roomCode);
-            if (res.success) {
+            if (res.success && res.room) {
                 activeRoom = res.room;
                 renderWaitingParticipants(res.room.participants);
                 document.getElementById('roomCapacityBadge').textContent = `${res.room.participants.length}/${res.room.maxParticipants} Participants`;
 
-                if (res.isActive) {
+                // Only transition if discussion session has been marked 'active'
+                if (res.room.status === 'active') {
                     clearInterval(pollInterval);
                     clearInterval(countdownInterval);
                     transitionToDiscussion();

@@ -1516,7 +1516,8 @@ export async function getRoomState(roomCode) {
         room,
         remainingSeconds,
         isExpired: room.status === 'expired',
-        isActive: room.status === 'active' || room.status === 'waiting'
+        isActive: room.status === 'active',
+        isWaiting: room.status === 'waiting'
     };
 }
 
