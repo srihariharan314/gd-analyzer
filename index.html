@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GD Analyzer | Master Group Discussions with AI & Real People</title>
+    <link rel="stylesheet" href="gd-analyzer/css/glass-lagoon.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .hero-section {
+            min-height: 90vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding-top: 5rem;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 3.5rem;
+            align-items: center;
+        }
+
+        .sim-preview-card {
+            position: relative;
+            padding: 1.75rem;
+            border-radius: var(--radius-xl);
+            background: linear-gradient(135deg, rgba(14, 23, 42, 0.85) 0%, rgba(8, 14, 30, 0.95) 100%);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px rgba(6, 182, 212, 0.15);
+        }
+
+        .sim-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .sim-avatar-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            gap: 0.5rem;
+        }
+
+        .sim-avatar-circle {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: var(--bg-surface-elevated);
+        }
+
+        .topic-chip {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(56, 189, 248, 0.14);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            transition: all var(--transition-normal);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .topic-chip:hover {
+            border-color: var(--lagoon-sky);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md), var(--glass-glow);
+            background: rgba(22, 36, 68, 0.75);
+        }
+
+        @media (max-width: 960px) {
+            .hero-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Glass Lagoon Navbar -->
+    <nav class="lagoon-nav">
+        <div class="lagoon-nav-inner">
+            <a href="index.html" class="lagoon-logo">
+                <div class="lagoon-logo-icon"><i class="fas fa-comments"></i></div>
+                <span>GD<span class="text-gradient-vibrant">Analyzer</span></span>
+            </a>
+
+            <div class="lagoon-nav-links">
+                <a href="#how-it-works" class="lagoon-nav-link">How It Works</a>
+                <a href="#modes" class="lagoon-nav-link">Modes</a>
+                <a href="#analytics" class="lagoon-nav-link">Analytics</a>
+                <a href="#topics-section" class="lagoon-nav-link">Topics</a>
+                <a href="gd-analyzer/pages/rooms.html" class="lagoon-nav-link">Human Rooms</a>
+                <a href="gd-analyzer/pages/dashboard.html" class="lagoon-nav-link">Dashboard</a>
+            </div>
+
+            <div class="lagoon-nav-actions">
+                <a href="gd-analyzer/pages/login.html" class="btn-lagoon btn-lagoon-secondary" style="padding: 0.5rem 1.1rem; font-size: 0.88rem;">Log In</a>
+                <a href="gd-analyzer/pages/prepare.html" class="btn-lagoon btn-lagoon-primary" style="padding: 0.5rem 1.25rem; font-size: 0.88rem;">
+                    <span>Start Practicing</span>
+                    <i class="fas fa-arrow-right" style="font-size: 0.75rem;"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="page-container">
+
+        <!-- ==================== HERO SECTION ==================== -->
+        <section class="hero-section">
+            <div class="hero-grid">
+                <div>
+                    <div class="glass-pill" style="margin-bottom: 1.5rem;">
+                        <span class="status-dot status-dot-active"></span>
+                        <span>Enterprise & Placement Grade GD Platform</span>
+                    </div>
+
+                    <h1 style="font-size: clamp(2.4rem, 4.5vw, 3.8rem); margin-bottom: 1.5rem;">
+                        Master Group Discussions with <span class="text-gradient">AI & Real People</span>
+                    </h1>
+
+                    <p style="font-size: 1.12rem; color: var(--text-secondary); margin-bottom: 2.25rem; max-width: 580px; line-height: 1.7;">
+                        Practice real-world GDs, debate with intelligent AI participants, challenge your friends and get detailed AI-powered performance feedback.
+                    </p>
+
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                        <a href="gd-analyzer/pages/prepare.html" class="btn-lagoon btn-lagoon-primary" style="padding: 0.9rem 2rem; font-size: 1.05rem;">
+                            <i class="fas fa-play"></i>
+                            <span>Start Practicing</span>
+                        </a>
+                        <a href="#topics-section" class="btn-lagoon btn-lagoon-secondary" style="padding: 0.9rem 1.8rem; font-size: 1.05rem;">
+                            <i class="fas fa-book-open"></i>
+                            <span>Explore GD Topics</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Right Visual -->
+                <div>
+                    <div class="sim-preview-card">
+                        <div class="sim-header">
+                            <div>
+                                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--lagoon-cyan); font-weight: 700;">Live Simulation</div>
+                                <div style="font-size: 0.95rem; font-weight: 700; color: #fff;">Will AI Replace Human Jobs?</div>
+                            </div>
+                            <div class="sim-timer-badge" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 9999px; padding: 0.35rem 0.85rem; font-family: monospace; color: var(--lagoon-sky);">
+                                <i class="fas fa-clock"></i>
+                                <span>03:42</span>
+                            </div>
+                        </div>
+
+                        <div class="sim-avatar-row">
+                            <div style="text-align: center;">
+                                <div class="sim-avatar-circle" style="border-color: #06b6d4; box-shadow: 0 0 15px rgba(6,182,212,0.5);">👤</div>
+                                <span style="font-size: 0.72rem; color: var(--lagoon-sky); font-weight: 600;">You</span>
+                            </div>
+                            <div style="text-align: center;">
+                                <div class="sim-avatar-circle" style="border-color: #10b981;">🤖</div>
+                                <span style="font-size: 0.72rem; color: var(--text-secondary);">Analyst</span>
+                            </div>
+                            <div style="text-align: center;">
+                                <div class="sim-avatar-circle" style="border-color: #f43f5e;">🤖</div>
+                                <span style="font-size: 0.72rem; color: var(--text-secondary);">Challenger</span>
+                            </div>
+                            <div style="text-align: center;">
+                                <div class="sim-avatar-circle" style="border-color: #8b5cf6;">🤖</div>
+                                <span style="font-size: 0.72rem; color: var(--text-secondary);">Builder</span>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel" style="padding: 1rem; border-left: 3px solid var(--lagoon-cyan); margin-bottom: 1rem;">
+                            <div style="font-size: 0.75rem; color: var(--lagoon-cyan); font-weight: 700; margin-bottom: 0.3rem;">You (Speaking...)</div>
+                            <p style="font-size: 0.85rem; color: #f1f5f9;">"Cognitive automation will reshape routine work, but empirical evidence indicates strategic augmentation creates net new industries..."</p>
+                        </div>
+
+                        <div class="glass-panel" style="padding: 1rem; border-left: 3px solid #10b981;">
+                            <div style="font-size: 0.75rem; color: #10b981; font-weight: 700; margin-bottom: 0.3rem;">AI Analyst</div>
+                            <p style="font-size: 0.85rem; color: #cbd5e1;">"Building on that, WEF estimates 97 million new roles will emerge requiring human-AI collaboration."</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Topics Showcase -->
+        <section id="topics-section" style="padding: 4rem 0;">
+            <div style="text-align: center; margin-bottom: 2.5rem;">
+                <span class="badge badge-amber" style="margin-bottom: 0.5rem;">Placement Curated</span>
+                <h2 style="font-size: 2.2rem;">Explore Core GD Topics</h2>
+            </div>
+
+            <div class="grid-cols-3">
+                <div class="topic-chip" onclick="window.location.href='gd-analyzer/pages/prepare.html?topic=Will%20AI%20Replace%20Human%20Jobs%20or%20Create%20New%20Ones%3F'">
+                    <span class="badge badge-cyan" style="align-self: flex-start;">AI</span>
+                    <h3 style="font-size: 1.15rem;">Will AI Replace Human Jobs or Create New Ones?</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);">Cognitive automation vs emergence of AI audit, ethics, and augmentation specializations.</p>
+                </div>
+
+                <div class="topic-chip" onclick="window.location.href='gd-analyzer/pages/prepare.html?topic=Social%20Media%3A%20Connectivity%20Boon%20or%20Mental%20Health%20Bane%3F'">
+                    <span class="badge badge-emerald" style="align-self: flex-start;">Technology</span>
+                    <h3 style="font-size: 1.15rem;">Social Media: Connectivity Boon or Mental Health Bane?</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);">Global creator networking vs algorithmic attention capture and teen anxiety.</p>
+                </div>
+
+                <div class="topic-chip" onclick="window.location.href='gd-analyzer/pages/prepare.html?topic=Electric%20Vehicles%3A%20Are%20They%20Truly%20Green%20from%20Cradle%20to%20Grave%3F'">
+                    <span class="badge badge-violet" style="align-self: flex-start;">Environment</span>
+                    <h3 style="font-size: 1.15rem;">Electric Vehicles: Are They Truly Green from Cradle to Grave?</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);">Zero tailpipe emissions vs battery mineral mining and coal-fired charging grids.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 2.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+        &copy; 2024–2026 GD Analyzer. Professional AI Group Discussion Platform.
+    </footer>
+
+</body>
+</html>

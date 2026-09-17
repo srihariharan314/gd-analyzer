@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live GD Arena | GD Analyzer</title>
+    <link rel="stylesheet" href="../css/glass-lagoon.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .arena-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 1.5rem;
+            height: calc(100vh - 8rem);
+        }
+
+        .chat-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Modal Overlay */
+        .report-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 8, 17, 0.88);
+            backdrop-filter: blur(22px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 960px) {
+            .arena-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Navigation Bar -->
+    <nav class="lagoon-nav">
+        <div class="lagoon-nav-inner">
+            <a href="../index.html" class="lagoon-logo">
+                <div class="lagoon-logo-icon"><i class="fas fa-comments"></i></div>
+                <span>GD<span class="text-gradient-vibrant">Analyzer</span></span>
+            </a>
+
+            <!-- Live Session Controls -->
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div class="sim-timer-badge" style="font-size: 0.95rem; padding: 0.4rem 1rem;">
+                    <i class="fas fa-clock"></i>
+                    <span id="sessionTimerDisplay">05:00</span>
+                </div>
+
+                <div class="glass-pill" style="font-size: 0.82rem;">
+                    <span style="color: var(--text-muted);">Speaker:</span>
+                    <span id="activeSpeakerDisplay" style="color: var(--lagoon-cyan); font-weight: 700;">Idle / Waiting</span>
+                </div>
+            </div>
+
+            <div class="lagoon-nav-actions">
+                <button type="button" id="pauseBtn" class="btn-lagoon btn-lagoon-secondary" style="padding: 0.45rem 0.9rem; font-size: 0.85rem;">
+                    <i class="fas fa-pause"></i>
+                    <span>Pause</span>
+                </button>
+                <button type="button" id="muteBtn" class="btn-lagoon btn-lagoon-secondary" style="padding: 0.45rem 0.9rem; font-size: 0.85rem;">
+                    <i class="fas fa-volume-up"></i>
+                    <span>Audio</span>
+                </button>
+                <button type="button" id="endSessionBtn" class="btn-lagoon btn-lagoon-danger" style="padding: 0.45rem 1rem; font-size: 0.85rem;">
+                    <i class="fas fa-flag-checkered"></i>
+                    <span>End GD</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Live Arena -->
+    <main class="page-container" style="padding-top: 5.5rem; padding-bottom: 1.5rem;">
+        
+        <!-- Topic Banner -->
+        <div class="glass-panel" style="padding: 0.85rem 1.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; border-radius: var(--radius-md);">
+            <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
+                <span class="badge badge-cyan" style="flex-shrink: 0;">Active Topic</span>
+                <h2 id="topicTitle" style="font-size: 1.15rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    Will AI Replace Human Jobs or Create New Ones?
+                </h2>
+            </div>
+            <div style="font-size: 0.82rem; color: var(--text-secondary); flex-shrink: 0;">
+                <span>Your Turns: <strong id="userTurnsCount" style="color: var(--lagoon-cyan);">0</strong></span>
+            </div>
+        </div>
+
+        <div class="arena-layout">
+            <!-- Left Panel: Participants Roster -->
+            <div class="glass-card" style="padding: 1.25rem; display: flex; flex-direction: column; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="font-size: 1.05rem;">Participants</h3>
+                    <span class="badge badge-indigo">Live Roster</span>
+                </div>
+
+                <div id="participantsGrid" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                    <!-- Rendered by discussion-sim.js -->
+                </div>
+            </div>
+
+            <!-- Right Panel: Live Discussion Chat & Input Bar -->
+            <div class="glass-card" style="display: flex; flex-direction: column; overflow: hidden;">
+                
+                <!-- Messages Feed -->
+                <div id="messagesContainer" class="chat-scroll-area">
+                    <!-- Dynamic Discussion Messages -->
+                </div>
+
+                <!-- Input Action Bar -->
+                <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 1rem 1.25rem; background: rgba(11, 19, 38, 0.9);">
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <input type="text" id="messageInput" class="lagoon-input" placeholder="Type your response or click 🎤 to speak naturally..." style="flex: 1; padding: 0.85rem 1.1rem;">
+                        
+                        <!-- Voice Mic Button -->
+                        <button type="button" id="voiceBtn" class="btn-lagoon btn-lagoon-secondary" style="padding: 0.85rem 1.2rem; font-size: 1.1rem; border-color: rgba(6, 182, 212, 0.4);" title="Toggle Voice Recognition">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+
+                        <!-- Send Button -->
+                        <button type="button" id="sendMessageBtn" class="btn-lagoon btn-lagoon-primary" style="padding: 0.85rem 1.5rem;">
+                            <span>Send</span>
+                            <i class="fas fa-paper-plane" style="font-size: 0.85rem;"></i>
+                        </button>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; font-size: 0.78rem;">
+                        <div id="voiceStatusText">
+                            <span style="color: var(--text-muted);"><i class="fas fa-circle-info"></i> Click the microphone or speak freely whenever you wish to contribute.</span>
+                        </div>
+                        <div style="color: var(--text-muted);">
+                            Press <kbd style="background: rgba(255, 255, 255, 0.1); padding: 0.15rem 0.4rem; border-radius: 4px;">Enter</kbd> to send
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ==================== POST GD EVALUATION REPORT MODAL ==================== -->
+    <div id="postGdModal" class="report-modal-overlay">
+        <div class="glass-card" style="width: 100%; max-width: 940px; max-height: 90vh; overflow-y: auto; padding: 2.5rem; border-color: rgba(6, 182, 212, 0.4); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9);">
+            
+            <!-- Modal Header -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 1.5rem;">
+                <div>
+                    <span class="badge badge-emerald" style="margin-bottom: 0.5rem;">Evaluation Completed</span>
+                    <h2 style="font-size: 2rem; color: #fff;">Placement Assessment Report</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.92rem;">Granular AI performance diagnosis across 8 corporate evaluation criteria.</p>
+                </div>
+                <!-- Score Badge -->
+                <div style="text-align: right; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: var(--radius-md); padding: 0.75rem 1.5rem;">
+                    <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--lagoon-cyan); font-weight: 700;">Overall Score</div>
+                    <div style="font-size: 2.2rem; font-weight: 800; font-family: 'Outfit', sans-serif; color: #fff;">
+                        <span id="reportOverallScore">84</span><span style="font-size: 1rem; color: var(--text-muted);">/100</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Radar Chart & Skills Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; align-items: center;">
+                <div style="height: 280px; position: relative;">
+                    <canvas id="reportRadarChart"></canvas>
+                </div>
+
+                <div>
+                    <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--lagoon-sky); font-weight: 700; margin-bottom: 0.75rem;">Recruiter Feedback Summary</div>
+                    <p id="reportStrategy" style="color: var(--text-secondary); line-height: 1.6; font-size: 0.92rem; margin-bottom: 1rem;"></p>
+                    
+                    <div class="glass-panel" style="padding: 1rem; border-left: 3px solid var(--lagoon-cyan);">
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--lagoon-cyan); font-weight: 700;">Personalized Strategy</div>
+                        <p id="reportRecommendation" style="color: #fff; font-size: 0.85rem; margin-top: 0.25rem; line-height: 1.5;"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strengths & Areas to Improve -->
+            <div class="grid-cols-2" style="margin-bottom: 2rem;">
+                <div class="glass-panel" style="padding: 1.5rem;">
+                    <div style="font-size: 0.82rem; text-transform: uppercase; color: var(--lagoon-emerald); font-weight: 700; margin-bottom: 0.75rem;">
+                        <i class="fas fa-check-circle"></i> What You Did Well
+                    </div>
+                    <ul id="reportStrengthsList" style="list-style: none; padding: 0;"></ul>
+                </div>
+
+                <div class="glass-panel" style="padding: 1.5rem;">
+                    <div style="font-size: 0.82rem; text-transform: uppercase; color: var(--lagoon-amber); font-weight: 700; margin-bottom: 0.75rem;">
+                        <i class="fas fa-exclamation-triangle"></i> Areas to Improve
+                    </div>
+                    <ul id="reportWeaknessesList" style="list-style: none; padding: 0;"></ul>
+                </div>
+            </div>
+
+            <!-- Contribution Diagnosis -->
+            <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div>
+                        <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--lagoon-sky); font-weight: 700; margin-bottom: 0.4rem;">Strongest Contribution</div>
+                        <blockquote id="reportBestQuote" style="color: #e2e8f0; font-size: 0.85rem; font-style: italic; line-height: 1.6;"></blockquote >
+                    </div>
+                    <div>
+                        <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--lagoon-amber); font-weight: 700; margin-bottom: 0.4rem;">Weakest / Hesitant Response</div>
+                        <blockquote id="reportWeakQuote" style="color: var(--text-secondary); font-size: 0.85rem; font-style: italic; line-height: 1.6;"></blockquote>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1rem; margin-top: 1rem;">
+                    <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--lagoon-cyan); font-weight: 700; margin-bottom: 0.35rem;">AI Recommended Better Response</div>
+                    <p id="reportBetterResponse" style="color: var(--text-primary); font-size: 0.88rem; line-height: 1.6;"></p>
+                </div>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; flex-wrap: wrap;">
+                <a href="prepare.html" class="btn-lagoon btn-lagoon-secondary">
+                    <i class="fas fa-redo"></i>
+                    <span>Practice Another Topic</span>
+                </a>
+                <a href="dashboard.html" class="btn-lagoon btn-lagoon-primary">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>View Dashboard Analytics</span>
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Voice Manager Script (Preserved & globally registered) -->
+    <script src="../js/voicemanager.js"></script>
+    <!-- Universal Bundle for file:/// and http:// -->
+    <script src="../js/gd-bundle.js"></script>
+    <!-- Discussion Simulator Script -->
+    <script type="module" src="../js/discussion-sim.js"></script>
+</body>
+</html>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual GD Session - GD Analyzer</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/gd-themes.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">🎯 GD Analyzer</div>
+            <div class="nav-links">
+                <a href="../index.html">Home</a>
+                <a href="dashboard.html">Dashboard</a>
+                <a href="#" id="logoutBtn">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Topic Hero Section with Dynamic Image -->
+    <div id="topicHero" class="topic-hero">
+        <div class="topic-hero-content">
+            <div class="loading-spinner">Loading topic...</div>
+        </div>
+    </div>
+
+    <div class="container" style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
+        <div class="gd-layout" style="display: grid; grid-template-columns: 300px 1fr 300px; gap: 2rem;">
+            <!-- Left Panel: AI Participants with Avatars -->
+            <div class="participants-panel" style="background: white; border-radius: 20px; padding: 1.5rem; box-shadow: var(--shadow-md);">
+                <h3 style="margin-bottom: 1rem;">👥 AI Participants</h3>
+                <div id="aiParticipantsList" class="participants-list">
+                    <!-- Dynamic AI participants will be added here -->
+                </div>
+                
+                <div class="session-stats" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+                    <h4>Session Stats</h4>
+                    <div id="sessionStats">
+                        <div>⏱️ Time: <span id="timer">0:00</span></div>
+                        <div>💬 Your turns: <span id="userTurns">0</span></div>
+                        <div>🎯 Score: <span id="sessionScore">0</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel: Chat Area -->
+            <div class="chat-panel" style="background: white; border-radius: 20px; display: flex; flex-direction: column; height: 70vh; box-shadow: var(--shadow-md);">
+                <div class="chat-header" style="padding: 1rem; border-bottom: 1px solid #e2e8f0;">
+                    <h3>💬 Group Discussion</h3>
+                    <div id="topicName" style="color: var(--gray-color); font-size: 0.9rem;"></div>
+                </div>
+                
+                <div id="chatMessages" class="chat-messages" style="flex: 1; overflow-y: auto; padding: 1rem;">
+                    <!-- Chat messages will appear here -->
+                </div>
+                
+                <div class="chat-input-area" style="padding: 1rem; border-top: 1px solid #e2e8f0;">
+                    <div class="input-group" style="display: flex; gap: 1rem;">
+                        <input type="text" id="userInput" placeholder="Type your response or click 🎤 to speak..." style="flex: 1; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 12px;">
+                        <button id="sendBtn" class="btn btn-primary">Send</button>
+                        <button id="voiceBtn" class="btn btn-secondary" style="font-size: 1.2rem;">🎤</button>
+                        <button id="endSessionBtn" class="btn btn-danger">End Session</button>
+                    </div>
+                    <div id="voiceStatus" style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--gray-color);"></div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Topic Insights with Related Images -->
+            <div class="insights-panel" style="background: white; border-radius: 20px; padding: 1.5rem; box-shadow: var(--shadow-md); overflow-y: auto; max-height: 70vh;">
+                <h3>📊 Topic Insights</h3>
+                <div id="topicBriefing">
+                    <!-- Topic briefing will be loaded here -->
+                </div>
+                
+                <div id="relatedImagesContainer" style="margin-top: 2rem;">
+                    <h4>📸 Related Images</h4>
+                    <div id="relatedImages" class="related-images-grid"></div>
+                </div>
+                
+                <div id="statsWidget" style="margin-top: 2rem;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- End Session Modal -->
+    <div id="endSessionModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Session Complete! 🎉</h2>
+            <div id="feedbackContent"></div>
+            <button id="closeModalBtn" class="btn btn-primary">View Dashboard</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db } from '../firebase-config.js';
+        import { 
+            getTopicBriefing, 
+            aiPersonalities, 
+            generateAIResponse, 
+            saveDiscussionSession 
+        } from '../gd-service.js';
+        import { 
+            getTopicTheme, 
+            applyTopicTheme, 
+            createAIAvatar, 
+            addRelatedImages,
+            createStatsWidget 
+        } from '../js/topic-images.js';
+        
+        // Get topic from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const topic = decodeURIComponent(urlParams.get('topic') || 'artificial intelligence');
+        
+        // Apply visual theme
+        const theme = applyTopicTheme(topic);
+        
+        // Add related images
+        setTimeout(() => {
+            addRelatedImages(topic, 'relatedImages');
+        }, 100);
+        
+        // Session state
+        let sessionActive = true;
+        let aiParticipants = [];
+        let conversation = [];
+        let startTime = Date.now();
+        let userTurns = 0;
+        let timerInterval;
+        
+        // Initialize AI Participants with avatars
+        const selectedPersonalities = ['aggressive', 'analytical', 'supportive', 'disruptive'];
+        aiParticipants = selectedPersonalities.map((personality, index) => ({
+            id: index,
+            personality: personality,
+            name: aiPersonalities[personality].name,
+            color: aiPersonalities[personality].color,
+            lastResponseTime: 0
+        }));
+        
+        // Render AI participants with avatars
+        function renderAIParticipants() {
+            const container = document.getElementById('aiParticipantsList');
+            container.innerHTML = aiParticipants.map(ai => `
+                <div class="participant-item" style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; margin-bottom: 0.5rem; background: #f8fafc; border-radius: 12px;">
+                    <div class="ai-avatar ${ai.personality}" style="width: 40px; height: 40px; font-size: 1.2rem;">
+                        ${aiPersonalities[ai.personality].catchphrases[0][0]}
+                    </div>
+                    <div>
+                        <div style="font-weight: 600;">${ai.name}</div>
+                        <div style="font-size: 0.8rem; color: ${ai.color};">${ai.personality}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Add message to chat with avatar
+        function addMessage(sender, message, isUser = false, personality = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${isUser ? 'user-message' : 'ai-message'}`;
+            
+            const avatarHtml = isUser 
+                ? '<div class="ai-avatar" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));">👤</div>'
+                : `<div class="ai-avatar ${personality || 'default'}">${aiPersonalities[personality]?.catchphrases[0][0] || '🤖'}</div>`;
+            
+            messageDiv.innerHTML = `
+                ${avatarHtml}
+                <div class="message-content">
+                    <div class="message-sender">${sender}</div>
+                    <div class="message-text">${message}</div>
+                </div>
+            `;
+            
+            document.getElementById('chatMessages').appendChild(messageDiv);
+            messageDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Load topic briefing and stats
+        async function loadTopicBriefing() {
+            const briefing = await getTopicBriefing(topic);
+            const briefingDiv = document.getElementById('topicBriefing');
+            
+            briefingDiv.innerHTML = `
+                <p style="margin-bottom: 1rem;">${briefing.topic.summary}</p>
+                <h4>Key Points:</h4>
+                <ul style="margin-left: 1rem;">
+                    ${briefing.topic.keyPoints.map(point => `<li>${point}</li>`).join('')}
+                </ul>
+                ${briefing.topic.statistics ? `
+                    <h4>Statistics:</h4>
+                    <ul style="margin-left: 1rem;">
+                        ${briefing.topic.statistics.map(stat => `<li>${stat}</li>`).join('')}
+                    </ul>
+                ` : ''}
+            `;
+            
+            // Add stats widget
+            if (theme.stats && Object.keys(theme.stats).length > 0) {
+                const statsWidget = createStatsWidget(theme.stats);
+                document.getElementById('statsWidget').appendChild(statsWidget);
+            }
+            
+            document.getElementById('topicName').innerHTML = `<span style="font-size: 1.2rem;">${theme.icon}</span> ${topic}`;
+        }
+        
+        // Generate AI response
+        async function generateAIResponseForAI(ai, context) {
+            const response = await generateAIResponse(
+                ai.personality,
+                topic,
+                conversation,
+                'You',
+                context
+            );
+            return response;
+        }
+        
+        // Process user input
+        async function processUserInput(input) {
+            if (!sessionActive || !input.trim()) return;
+            
+            // Add user message
+            addMessage('You', input, true);
+            conversation.push({ type: 'user', content: input });
+            userTurns++;
+            document.getElementById('userTurns').textContent = userTurns;
+            
+            // Get AI responses (simple round-robin for demo)
+            for (const ai of aiParticipants) {
+                const aiResponse = await generateAIResponseForAI(ai, { conversation });
+                if (aiResponse) {
+                    addMessage(ai.name, aiResponse, false, ai.personality);
+                    conversation.push({ type: 'ai', content: aiResponse, aiName: ai.name, aiId: ai.id });
+                    break; // Only one AI responds per user turn for simplicity
+                }
+            }
+        }
+        
+        // Voice functionality
+        let recognition = null;
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('userInput').value = transcript;
+                processUserInput(transcript);
+                document.getElementById('voiceStatus').textContent = '';
+            };
+            
+            recognition.onerror = () => {
+                document.getElementById('voiceStatus').textContent = 'Voice recognition error. Please try again.';
+            };
+        }
+        
+        // Timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('timer').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+        
+        // End session
+        async function endSession() {
+            sessionActive = false;
+            clearInterval(timerInterval);
+            
+            const duration = Math.floor((Date.now() - startTime) / 1000);
+            const score = Math.floor(userTurns * 10 + duration / 10);
+            document.getElementById('sessionScore').textContent = score;
+            
+            const feedback = `Great session! You spoke ${userTurns} times over ${Math.floor(duration / 60)} minutes. Your engagement score is ${score}. Keep practicing!`;
+            
+            await saveDiscussionSession({
+                topic: topic,
+                aiCount: aiParticipants.length,
+                personalities: selectedPersonalities,
+                duration: duration,
+                transcript: conversation,
+                score: score,
+                feedback: feedback,
+                speakingTime: userTurns * 15,
+                interruptions: 0
+            });
+            
+            document.getElementById('feedbackContent').innerHTML = `
+                <p><strong>Topic:</strong> ${topic}</p>
+                <p><strong>Duration:</strong> ${Math.floor(duration / 60)} minutes ${duration % 60} seconds</p>
+                <p><strong>Your Contributions:</strong> ${userTurns}</p>
+                <p><strong>Score:</strong> ${score}</p>
+                <p><strong>Feedback:</strong> ${feedback}</p>
+            `;
+            document.getElementById('endSessionModal').style.display = 'flex';
+        }
+        
+        // Event listeners
+        document.getElementById('sendBtn').addEventListener('click', () => {
+            const input = document.getElementById('userInput').value;
+            processUserInput(input);
+            document.getElementById('userInput').value = '';
+        });
+        
+        document.getElementById('voiceBtn').addEventListener('click', () => {
+            if (recognition) {
+                recognition.start();
+                document.getElementById('voiceStatus').textContent = '🎙️ Listening... Speak now!';
+            } else {
+                alert('Voice recognition not supported in this browser. Please use Chrome or Edge.');
+            }
+        });
+        
+        document.getElementById('endSessionBtn').addEventListener('click', endSession);
+        document.getElementById('closeModalBtn').addEventListener('click', () => {
+            window.location.href = 'dashboard.html';
+        });
+        
+        document.getElementById('userInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('sendBtn').click();
+            }
+        });
+        
+        // Initialize
+        renderAIParticipants();
+        loadTopicBriefing();
+        startTimer();
+        
+        // Welcome message
+        setTimeout(() => {
+            addMessage('System', `Welcome to the GD session on "${topic}"! Start by sharing your thoughts.`, false);
+        }, 500);
+    </script>
+    
+    <style>
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .related-images-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .related-images-grid img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .related-images-grid img:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candidate Profile | GD Analyzer</title>
+    <link rel="stylesheet" href="../css/glass-lagoon.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Floating Navigation Bar -->
+    <nav class="lagoon-nav">
+        <div class="lagoon-nav-inner">
+            <a href="../index.html" class="lagoon-logo">
+                <div class="lagoon-logo-icon"><i class="fas fa-comments"></i></div>
+                <span>GD<span class="text-gradient-vibrant">Analyzer</span></span>
+            </a>
+            <div class="lagoon-nav-links">
+                <a href="dashboard.html" class="lagoon-nav-link">Dashboard</a>
+                <a href="prepare.html" class="lagoon-nav-link">Practice GD</a>
+                <a href="rooms.html" class="lagoon-nav-link">Human Rooms</a>
+                <a href="history.html" class="lagoon-nav-link">Analytics</a>
+                <a href="profile.html" class="lagoon-nav-link active">Profile</a>
+            </div>
+            <div class="lagoon-nav-actions">
+                <a href="dashboard.html" class="btn-lagoon btn-lagoon-secondary" style="padding: 0.45rem 1rem; font-size: 0.85rem;">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="page-container" style="max-width: 860px;">
+
+        <!-- Profile Header Card -->
+        <div class="glass-card" style="padding: 2.5rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;">
+            <div style="width: 84px; height: 84px; border-radius: 50%; background: var(--grad-primary); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 800; color: #fff; box-shadow: 0 0 30px rgba(6, 182, 212, 0.4);">
+                <span id="profileAvatarLetter">A</span>
+            </div>
+            <div style="flex: 1; min-width: 240px;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+                    <h2 id="profileNameDisplay" style="font-size: 1.8rem;">Candidate Alex</h2>
+                    <span class="badge badge-cyan">Pro Candidate</span>
+                </div>
+                <p id="profileEmailDisplay" style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 0.75rem;">alex.rivera@gdpro.ai</p>
+                <div style="display: flex; gap: 1rem; font-size: 0.82rem; color: var(--text-muted);">
+                    <span><i class="fas fa-calendar"></i> Member since 2024</span>
+                    <span><i class="fas fa-shield-halved"></i> Verified Profile</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics Grid -->
+        <div class="grid-cols-4" style="margin-bottom: 2rem;">
+            <div class="glass-card" style="padding: 1.25rem; text-align: center;">
+                <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total GDs</span>
+                <div style="font-size: 1.8rem; font-weight: 800; font-family: 'Outfit', sans-serif; color: #fff; margin-top: 0.25rem;">18</div>
+            </div>
+
+            <div class="glass-card" style="padding: 1.25rem; text-align: center;">
+                <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Best Score</span>
+                <div style="font-size: 1.8rem; font-weight: 800; font-family: 'Outfit', sans-serif; color: var(--lagoon-emerald); margin-top: 0.25rem;">86</div>
+            </div>
+
+            <div class="glass-card" style="padding: 1.25rem; text-align: center;">
+                <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Avg Score</span>
+                <div style="font-size: 1.8rem; font-weight: 800; font-family: 'Outfit', sans-serif; color: var(--lagoon-cyan); margin-top: 0.25rem;">74</div>
+            </div>
+
+            <div class="glass-card" style="padding: 1.25rem; text-align: center;">
+                <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Improvement</span>
+                <div style="font-size: 1.8rem; font-weight: 800; font-family: 'Outfit', sans-serif; color: var(--lagoon-amber); margin-top: 0.25rem;">+14%</div>
+            </div>
+        </div>
+
+        <!-- Preferences Form -->
+        <div class="glass-card" style="padding: 2.25rem; margin-bottom: 2rem;">
+            <h3 style="font-size: 1.25rem; margin-bottom: 1.5rem;">Simulation & Audio Preferences</h3>
+
+            <div class="lagoon-input-group">
+                <label class="lagoon-input-label">Preferred GD Mode</label>
+                <select id="prefDefaultMode" class="lagoon-input">
+                    <option value="ai" selected>Customizable AI Participants (Solo)</option>
+                    <option value="human">Real Human GD Rooms</option>
+                    <option value="hybrid">Hybrid Human + AI</option>
+                </select>
+            </div>
+
+            <div class="lagoon-input-group">
+                <label class="lagoon-input-label">Standard Session Duration</label>
+                <select id="prefDuration" class="lagoon-input">
+                    <option value="180">3 Minutes (Fast Pace)</option>
+                    <option value="300" selected>5 Minutes (Standard Campus Round)</option>
+                    <option value="600">10 Minutes (Full Executive Assessment)</option>
+                </select>
+            </div>
+
+            <div class="lagoon-input-group">
+                <label class="lagoon-input-label">Default Target Role</label>
+                <input type="text" id="prefRole" class="lagoon-input" value="Software Engineer / Product Analyst">
+            </div>
+
+            <button type="button" id="savePrefsBtn" class="btn-lagoon btn-lagoon-primary" style="margin-top: 0.5rem;">
+                <i class="fas fa-save"></i>
+                <span>Save Preferences</span>
+            </button>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="glass-card" style="padding: 2rem; border-color: rgba(244, 63, 94, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h4 style="color: var(--lagoon-rose); font-size: 1.1rem; margin-bottom: 0.25rem;">Account Sign Out</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">Clear current candidate session and return to landing.</p>
+                </div>
+                <button type="button" id="profileLogoutBtn" class="btn-lagoon btn-lagoon-danger">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Log Out</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Notifications Root -->
+    <div id="lagoon-toast-container"></div>
+
+    <script type="module">
+        import { getCurrentUser, logoutUser } from '../gd-service.js';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await getCurrentUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const name = user.displayName || user.name || (user.email ? user.email.split('@')[0] : 'Candidate');
+            const email = user.email || 'candidate@gdpro.ai';
+
+            document.getElementById('profileNameDisplay').textContent = name;
+            document.getElementById('profileEmailDisplay').textContent = email;
+            document.getElementById('profileAvatarLetter').textContent = name.charAt(0).toUpperCase();
+
+            // Save preferences
+            document.getElementById('savePrefsBtn')?.addEventListener('click', () => {
+                showToast('Candidate preferences updated successfully!');
+            });
+
+            // Logout
+            document.getElementById('profileLogoutBtn')?.addEventListener('click', async () => {
+                await logoutUser();
+                window.location.href = '../index.html';
+            });
+        });
+
+        function showToast(msg) {
+            const container = document.getElementById('lagoon-toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'lagoon-toast';
+            toast.innerHTML = `<i class="fas fa-check-circle" style="color: var(--lagoon-emerald);"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
+    </script>
+</body>
+</html>

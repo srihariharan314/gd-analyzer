@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Human GD Room & Waiting Lobby | GD Analyzer</title>
+    <link rel="stylesheet" href="../css/glass-lagoon.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .room-code-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.2rem;
+            letter-spacing: 0.15em;
+            color: var(--lagoon-cyan);
+            background: rgba(6, 182, 212, 0.1);
+            border: 2px dashed rgba(6, 182, 212, 0.4);
+            border-radius: var(--radius-lg);
+            padding: 1rem 2rem;
+            text-align: center;
+            margin: 1.5rem 0;
+            user-select: all;
+        }
+
+        .countdown-large {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 3rem;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 0 25px rgba(6, 182, 212, 0.5);
+        }
+
+        .participant-bubble {
+            background: rgba(14, 23, 42, 0.75);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Navigation Bar -->
+    <nav class="lagoon-nav">
+        <div class="lagoon-nav-inner">
+            <a href="../index.html" class="lagoon-logo">
+                <div class="lagoon-logo-icon"><i class="fas fa-comments"></i></div>
+                <span>GD<span class="text-gradient-vibrant">Analyzer</span></span>
+            </a>
+            <div class="lagoon-nav-links">
+                <a href="dashboard.html" class="lagoon-nav-link">Dashboard</a>
+                <a href="prepare.html" class="lagoon-nav-link">Practice GD</a>
+                <a href="rooms.html" class="lagoon-nav-link active">Human Rooms</a>
+                <a href="history.html" class="lagoon-nav-link">Analytics</a>
+            </div>
+            <div class="lagoon-nav-actions">
+                <a href="dashboard.html" class="btn-lagoon btn-lagoon-secondary" style="padding: 0.45rem 1rem; font-size: 0.85rem;">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="page-container">
+
+        <!-- ==================== VIEW 1: ENTRY / CODE INPUT ==================== -->
+        <div id="roomEntryView" style="display: none; max-width: 580px; margin: 2rem auto;">
+            <div class="glass-card" style="padding: 2.5rem; text-align: center;">
+                <div class="lagoon-logo-icon" style="margin: 0 auto 1.25rem auto; width: 48px; height: 48px; font-size: 1.4rem;">
+                    <i class="fas fa-users-viewfinder"></i>
+                </div>
+                <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem;">Join Human GD Room</h2>
+                <p style="color: var(--text-secondary); font-size: 0.92rem; margin-bottom: 2rem;">
+                    Enter the one-time code shared by your host to join the synchronized discussion.
+                </p>
+
+                <div class="lagoon-input-group" style="text-align: left;">
+                    <label class="lagoon-input-label">Your Name</label>
+                    <input type="text" id="joinUserNameInput" class="lagoon-input" placeholder="e.g. Arun Kumar">
+                </div>
+
+                <div class="lagoon-input-group" style="text-align: left;">
+                    <label class="lagoon-input-label">Room Code (e.g. GD-7K92X)</label>
+                    <input type="text" id="joinRoomCodeInput" class="lagoon-input" placeholder="GD-XXXXX" style="font-family: 'JetBrains Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase;">
+                </div>
+
+                <button type="button" id="submitJoinRoomBtn" class="btn-lagoon btn-lagoon-primary" style="width: 100%; margin-top: 1rem;">
+                    <i class="fas fa-door-open"></i>
+                    <span>Enter Waiting Room</span>
+                </button>
+
+                <div style="margin-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1.5rem;">
+                    <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.75rem;">Want to host your own session instead?</p>
+                    <button type="button" id="switchToCreateBtn" class="btn-lagoon btn-lagoon-outline" style="width: 100%;">
+                        <i class="fas fa-plus"></i>
+                        <span>Create New Human GD Room</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== VIEW 2: CREATE ROOM ==================== -->
+        <div id="roomCreateView" style="display: none; max-width: 620px; margin: 2rem auto;">
+            <div class="glass-card" style="padding: 2.5rem;">
+                <span class="badge badge-cyan" style="margin-bottom: 0.75rem;">Live Multi-User GD</span>
+                <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem;">Create Human GD Room</h2>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.75rem;">
+                    Generate a join link and share with your friends. Participants have 2 minutes to assemble.
+                </p>
+
+                <div class="lagoon-input-group">
+                    <label class="lagoon-input-label">Host Name</label>
+                    <input type="text" id="createHostName" class="lagoon-input" placeholder="Your Name">
+                </div>
+
+                <div class="lagoon-input-group">
+                    <label class="lagoon-input-label">Discussion Topic</label>
+                    <input type="text" id="createRoomTopic" class="lagoon-input" value="Will AI Replace Human Jobs or Create New Ones?">
+                </div>
+
+                <div class="grid-cols-2" style="gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="lagoon-input-group">
+                        <label class="lagoon-input-label">Duration</label>
+                        <select id="createRoomDuration" class="lagoon-input">
+                            <option value="180">3 Minutes</option>
+                            <option value="300" selected>5 Minutes</option>
+                            <option value="600">10 Minutes</option>
+                        </select>
+                    </div>
+
+                    <div class="lagoon-input-group">
+                        <label class="lagoon-input-label">Max Participants</label>
+                        <select id="createRoomMax" class="lagoon-input">
+                            <option value="4">4 People</option>
+                            <option value="6" selected>6 People</option>
+                            <option value="8">8 People</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="button" id="executeCreateRoomBtn" class="btn-lagoon btn-lagoon-primary" style="width: 100%;">
+                    <i class="fas fa-bolt"></i>
+                    <span>Generate One-Time Room Code</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== VIEW 3: LIVE WAITING ROOM ==================== -->
+        <div id="roomWaitingView" style="display: none; max-width: 860px; margin: 1.5rem auto;">
+            
+            <!-- Room Info & Countdown Card -->
+            <div class="glass-card" style="padding: 2.5rem; text-align: center; margin-bottom: 2rem; border-color: rgba(6, 182, 212, 0.4);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                    <span class="badge badge-emerald"><span class="status-dot status-dot-active"></span> Waiting Lobby Active</span>
+                    <span id="roomCapacityBadge" class="badge badge-indigo">1/6 Participants</span>
+                </div>
+
+                <h2 id="waitingTopicTitle" style="font-size: 1.6rem; color: #fff; margin-bottom: 0.5rem;">
+                    Will AI Replace Human Jobs or Create New Ones?
+                </h2>
+                <p style="color: var(--text-secondary); font-size: 0.88rem;">Host: <strong id="waitingHostName" style="color: var(--lagoon-sky);">Host</strong></p>
+
+                <!-- Room Code Display -->
+                <div style="font-size: 0.82rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-top: 1.5rem;">One-Time Room Code</div>
+                <div id="roomCodeText" class="room-code-display">GD-7K92X</div>
+
+                <!-- 2-Minute Joining Countdown -->
+                <div style="margin-bottom: 1.75rem;">
+                    <div style="font-size: 0.82rem; text-transform: uppercase; color: var(--lagoon-amber); font-weight: 700; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+                        <i class="fas fa-hourglass-half"></i> Joining Window Remaining
+                    </div>
+                    <div id="waitingCountdownDisplay" class="countdown-large">01:59</div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted);">Session automatically locks and starts when the timer reaches zero.</div>
+                </div>
+
+                <!-- Share Action Buttons -->
+                <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <button type="button" id="copyRoomCodeBtn" class="btn-lagoon btn-lagoon-secondary" style="font-size: 0.88rem;">
+                        <i class="fas fa-copy"></i>
+                        <span>Copy Code</span>
+                    </button>
+
+                    <button type="button" id="copyJoinLinkBtn" class="btn-lagoon btn-lagoon-secondary" style="font-size: 0.88rem;">
+                        <i class="fas fa-link"></i>
+                        <span>Copy Link</span>
+                    </button>
+
+                    <!-- WhatsApp 1-Click Share -->
+                    <a id="whatsAppShareBtn" href="#" target="_blank" class="btn-lagoon btn-lagoon-primary" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); box-shadow: 0 10px 30px rgba(37, 211, 102, 0.35); font-size: 0.88rem;">
+                        <i class="fab fa-whatsapp" style="font-size: 1.1rem;"></i>
+                        <span>Invite on WhatsApp</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Participants Roster -->
+            <div class="glass-card" style="padding: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 style="font-size: 1.25rem;">Joined Participants</h3>
+                    <span style="font-size: 0.82rem; color: var(--lagoon-sky);">Real-time synchronized</span>
+                </div>
+
+                <div id="waitingParticipantsList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <!-- Rendered dynamically -->
+                </div>
+
+                <!-- Manual Launch Button (Host) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1.5rem; flex-wrap: gap: 1rem;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">
+                        Waiting for peers to join... Ready to begin early?
+                    </span>
+                    <button type="button" id="forceStartRoomBtn" class="btn-lagoon btn-lagoon-primary">
+                        <i class="fas fa-play"></i>
+                        <span>Start Discussion Now</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Toast Notifications Root -->
+    <div id="lagoon-toast-container"></div>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { createHumanRoom, getRoomState, joinHumanRoom, generateWhatsAppShareUrl, getCurrentUser } from '../gd-service.js';
+
+        let activeRoom = null;
+        let countdownInterval = null;
+        let pollInterval = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await getCurrentUser();
+            const currentUserName = user?.displayName || user?.name || (user?.email ? user.email.split('@')[0] : 'Participant');
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const passedCode = urlParams.get('code');
+            const shouldCreate = urlParams.get('create');
+            const passedTopic = urlParams.get('topic');
+
+            if (passedCode) {
+                // If code is in URL, auto-fill join or open waiting room
+                document.getElementById('joinRoomCodeInput').value = passedCode.toUpperCase();
+                document.getElementById('joinUserNameInput').value = currentUserName;
+                
+                // Attempt join
+                const joinRes = joinHumanRoom(passedCode, currentUserName);
+                if (joinRes.success) {
+                    showWaitingLobby(joinRes.room);
+                } else {
+                    showEntryView();
+                }
+            } else if (shouldCreate) {
+                showCreateView(passedTopic, currentUserName);
+            } else {
+                showEntryView();
+            }
+
+            setupEventHandlers(currentUserName);
+        });
+
+        function showEntryView() {
+            document.getElementById('roomEntryView').style.display = 'block';
+            document.getElementById('roomCreateView').style.display = 'none';
+            document.getElementById('roomWaitingView').style.display = 'none';
+        }
+
+        function showCreateView(topic, userName) {
+            document.getElementById('roomEntryView').style.display = 'none';
+            document.getElementById('roomCreateView').style.display = 'block';
+            document.getElementById('roomWaitingView').style.display = 'none';
+
+            if (topic) document.getElementById('createRoomTopic').value = topic;
+            if (userName) document.getElementById('createHostName').value = userName;
+        }
+
+        function showWaitingLobby(room) {
+            activeRoom = room;
+            document.getElementById('roomEntryView').style.display = 'none';
+            document.getElementById('roomCreateView').style.display = 'none';
+            document.getElementById('roomWaitingView').style.display = 'block';
+
+            document.getElementById('waitingTopicTitle').textContent = room.topic;
+            document.getElementById('waitingHostName').textContent = room.hostName;
+            document.getElementById('roomCodeText').textContent = room.roomCode;
+            document.getElementById('roomCapacityBadge').textContent = `${room.participants.length}/${room.maxParticipants} Participants`;
+
+            // WhatsApp link
+            const waUrl = generateWhatsAppShareUrl(room);
+            const waBtn = document.getElementById('whatsAppShareBtn');
+            if (waBtn) waBtn.href = waUrl;
+
+            renderWaitingParticipants(room.participants);
+            startCountdownTimer();
+
+            // Setup real-time polling to reflect newly joined friends
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(refreshRoomStatus, 2000);
+        }
+
+        function renderWaitingParticipants(participants) {
+            const list = document.getElementById('waitingParticipantsList');
+            if (!list) return;
+
+            list.innerHTML = participants.map(p => `
+                <div class="participant-bubble">
+                    <div style="width: 42px; height: 42px; border-radius: 50%; background: ${p.avatarColor || 'var(--lagoon-cyan)'}; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">
+                        ${p.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${p.name}</div>
+                        <div style="font-size: 0.75rem; color: ${p.isHost ? 'var(--lagoon-cyan)' : 'var(--text-muted)'};">
+                            ${p.isHost ? '<i class="fas fa-crown"></i> Room Host' : '<i class="fas fa-check"></i> Ready'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function startCountdownTimer() {
+            if (countdownInterval) clearInterval(countdownInterval);
+
+            const display = document.getElementById('waitingCountdownDisplay');
+
+            const tick = () => {
+                const now = Date.now();
+                const remaining = Math.max(0, Math.floor((activeRoom.expiresAt - now) / 1000));
+
+                const m = Math.floor(remaining / 60);
+                const s = remaining % 60;
+                if (display) display.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+                if (remaining <= 0) {
+                    clearInterval(countdownInterval);
+                    clearInterval(pollInterval);
+                    transitionToDiscussion();
+                }
+            };
+
+            tick();
+            countdownInterval = setInterval(tick, 1000);
+        }
+
+        function refreshRoomStatus() {
+            if (!activeRoom) return;
+            const res = getRoomState(activeRoom.roomCode);
+            if (res.success) {
+                activeRoom = res.room;
+                renderWaitingParticipants(res.room.participants);
+                document.getElementById('roomCapacityBadge').textContent = `${res.room.participants.length}/${res.room.maxParticipants} Participants`;
+
+                if (res.isActive) {
+                    clearInterval(pollInterval);
+                    clearInterval(countdownInterval);
+                    transitionToDiscussion();
+                }
+            }
+        }
+
+        function transitionToDiscussion() {
+            sessionStorage.setItem('currentTopic', activeRoom.topic);
+            sessionStorage.setItem('discussionDuration', activeRoom.duration);
+            sessionStorage.setItem('discussionMode', 'human');
+            sessionStorage.setItem('activeRoomCode', activeRoom.roomCode);
+            
+            // Redirect to live arena
+            window.location.href = 'simulate.html';
+        }
+
+        function setupEventHandlers(defaultUserName) {
+            // Switch to create
+            document.getElementById('switchToCreateBtn')?.addEventListener('click', () => {
+                showCreateView(null, defaultUserName);
+            });
+
+            // Submit Create Room
+            document.getElementById('executeCreateRoomBtn')?.addEventListener('click', () => {
+                const host = document.getElementById('createHostName').value.trim() || defaultUserName;
+                const topic = document.getElementById('createRoomTopic').value.trim();
+                const duration = document.getElementById('createRoomDuration').value;
+                const max = document.getElementById('createRoomMax').value;
+
+                const room = createHumanRoom(host, topic, duration, max);
+                showWaitingLobby(room);
+            });
+
+            // Submit Join Room
+            document.getElementById('submitJoinRoomBtn')?.addEventListener('click', () => {
+                const name = document.getElementById('joinUserNameInput').value.trim() || defaultUserName;
+                const code = document.getElementById('joinRoomCodeInput').value.trim().toUpperCase();
+
+                if (!code) {
+                    alert('Please enter a room code');
+                    return;
+                }
+
+                const res = joinHumanRoom(code, name);
+                if (res.success) {
+                    showWaitingLobby(res.room);
+                } else {
+                    alert(res.error || 'Could not join room');
+                }
+            });
+
+            // Copy Code
+            document.getElementById('copyRoomCodeBtn')?.addEventListener('click', () => {
+                if (activeRoom) {
+                    navigator.clipboard.writeText(activeRoom.roomCode);
+                    showToast('Room Code copied to clipboard!');
+                }
+            });
+
+            // Copy Link
+            document.getElementById('copyJoinLinkBtn')?.addEventListener('click', () => {
+                if (activeRoom) {
+                    const link = `${window.location.origin}/pages/rooms.html?code=${activeRoom.roomCode}`;
+                    navigator.clipboard.writeText(link);
+                    showToast('Invitation link copied to clipboard!');
+                }
+            });
+
+            // Force Start Now
+            document.getElementById('forceStartRoomBtn')?.addEventListener('click', () => {
+                if (confirm('Start the group discussion now with current participants?')) {
+                    transitionToDiscussion();
+                }
+            });
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('lagoon-toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'lagoon-toast';
+            toast.innerHTML = `<i class="fas fa-check-circle" style="color: var(--lagoon-emerald);"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
+    </script>
+</body>
+</html>

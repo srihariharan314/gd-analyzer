@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | GD Analyzer</title>
+    <link rel="stylesheet" href="../css/glass-lagoon.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Floating Navigation Bar -->
+    <nav class="lagoon-nav">
+        <div class="lagoon-nav-inner">
+            <a href="../index.html" class="lagoon-logo">
+                <div class="lagoon-logo-icon"><i class="fas fa-comments"></i></div>
+                <span>GD<span class="text-gradient-vibrant">Analyzer</span></span>
+            </a>
+            <div class="lagoon-nav-links">
+                <a href="../index.html" class="lagoon-nav-link">Home</a>
+                <a href="prepare.html" class="lagoon-nav-link">Topics</a>
+                <a href="rooms.html" class="lagoon-nav-link">Human Rooms</a>
+            </div>
+            <div class="lagoon-nav-actions">
+                <a href="signup.html" class="btn-lagoon btn-lagoon-outline" style="padding: 0.45rem 1.1rem; font-size: 0.88rem;">Create Account</a>
+            </div>
+        </div>
+    </nav>
+
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 6.5rem 1.5rem 3rem 1.5rem;">
+        <div class="glass-card" style="width: 100%; max-width: 440px; padding: 2.5rem; position: relative;">
+            
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div class="lagoon-logo-icon" style="margin: 0 auto 1rem auto; width: 44px; height: 44px; font-size: 1.3rem;">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem;">Welcome Back</h2>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">Sign in to track your GD performance and history</p>
+            </div>
+
+            <!-- Error Banner -->
+            <div id="loginError" style="display: none; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.3); color: var(--lagoon-rose); padding: 0.75rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem; margin-bottom: 1.25rem;"></div>
+
+            <!-- Google Sign In -->
+            <button type="button" class="btn-lagoon btn-lagoon-secondary btn-google-auth" style="width: 100%; margin-bottom: 1.25rem; font-size: 0.92rem;">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width: 18px;" alt="Google">
+                <span>Continue with Google</span>
+            </button>
+
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem;">
+                <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.08);"></div>
+                <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">or email</span>
+                <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.08);"></div>
+            </div>
+
+            <form id="loginForm">
+                <div class="lagoon-input-group">
+                    <label class="lagoon-input-label" for="email">Email Address</label>
+                    <input type="email" id="email" class="lagoon-input" required placeholder="name@domain.com" autocomplete="email">
+                </div>
+
+                <div class="lagoon-input-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label class="lagoon-input-label" for="password">Password</label>
+                        <a href="#" onclick="alert('Password reset link has been dispatched to your email.');" style="font-size: 0.8rem; color: var(--lagoon-sky);">Forgot Password?</a>
+                    </div>
+                    <input type="password" id="password" class="lagoon-input" required placeholder="••••••••" autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="btn-lagoon btn-lagoon-primary" style="width: 100%; margin-top: 0.5rem;">
+                    <span>Sign In</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <!-- Instant Demo Access -->
+            <div style="margin-top: 1.5rem; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1.25rem;">
+                <button type="button" class="btn-lagoon btn-lagoon-outline btn-guest-auth" style="width: 100%; font-size: 0.85rem; padding: 0.6rem 1rem;">
+                    <i class="fas fa-user-astronaut"></i>
+                    <span>Instant Candidate Demo Access</span>
+                </button>
+            </div>
+
+            <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-top: 1.25rem;">
+                Don't have an account? <a href="signup.html" style="font-weight: 600;">Create Account</a>
+            </p>
+
+        </div>
+    </div>
+
+    <script type="module" src="../js/auth.js"></script>
+</body>
+</html>

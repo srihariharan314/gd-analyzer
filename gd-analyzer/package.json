@@ -1,0 +1,23 @@
+{
+  "name": "gd-analyzer",
+  "version": "1.0.0",
+  "description": "Group Discussion Analyzer with AI Simulation",
+  "main": "index.html",
+  "scripts": {
+    "start": "live-server --port=3000",
+    "dev": "live-server --port=3000 --watch=."
+  },
+  "dependencies": {
+    "firebase": "^10.7.0"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.0"
+  },
+  "keywords": [
+    "gd",
+    "interview-prep",
+    "ai-simulation"
+  ],
+  "author": "",
+  "license": "ISC"
+}

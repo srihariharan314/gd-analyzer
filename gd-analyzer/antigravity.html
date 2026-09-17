@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anti-Gravity | Real-Time AI Assistant</title>
+    <link rel="stylesheet" href="css/antigravity.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="dark-theme">
+    <div class="background-overlay"></div>
+    
+    <div class="app-container">
+        <!-- Header -->
+        <header class="main-header glass-card">
+            <div class="logo">
+                <span class="logo-icon"><i class="fas fa-microchip"></i></span>
+                <h1>ANTI-GRAVITY <span class="vocal-tag">AI</span></h1>
+            </div>
+            <div class="session-info">
+                <span id="statusIndicator" class="status-badge idle">
+                    <span class="dot"></span> IDLE
+                </span>
+            </div>
+            <div class="controls">
+                <button id="themeToggle" class="icon-btn"><i class="fas fa-moon"></i></button>
+                <button id="settingsBtn" class="icon-btn"><i class="fas fa-cog"></i></button>
+            </div>
+        </header>
+
+        <main class="content-grid">
+            <!-- Left Panel: AI Presence -->
+            <section class="presence-panel glass-card">
+                <div class="avatar-container">
+                    <div class="avatar-glow"></div>
+                    <img id="aiAvatar" src="images/antigravity_ai_avatar.png" alt="AI Avatar" class="ai-avatar">
+                </div>
+                <div class="voice-wave-container">
+                    <canvas id="voiceWaveform"></canvas>
+                </div>
+                <div class="ai-speech-status">
+                    <h2 id="aiStatusText">Attending to discussion...</h2>
+                </div>
+            </section>
+
+            <!-- Center Panel: Chat History -->
+            <section class="chat-panel glass-card">
+                <div class="transcript-container" id="chatHistory">
+                    <div class="message ai fading-in">
+                        <div class="msg-content">Hello. I am Anti-Gravity. I am connected to live Google data streams. How can I contribute to the discussion?</div>
+                    </div>
+                </div>
+                
+                <div class="input-area">
+                    <div class="mic-section">
+                        <button id="mainMicBtn" class="mic-btn">
+                            <i class="fas fa-microphone"></i>
+                            <div class="pulse-ring"></div>
+                        </button>
+                        <p class="mic-label">Hold or Click to Speak</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Real-Time Insights -->
+            <section class="insights-panel glass-card" id="groundingPanel">
+                <div class="scanning-line"></div>
+                <div class="data-stream" id="dataStream"></div>
+                <div class="panel-header">
+                    <h3><i class="fas fa-search"></i> LIVE GROUNDING</h3>
+                    <span class="beta-tag">REAL-TIME</span>
+                </div>
+                <div class="insights-content" id="realtimeInsights">
+                    <div class="empty-state">
+                        <i class="fas fa-satellite"></i>
+                        <p>Awaiting user input to fetch latest data from Google...</p>
+                    </div>
+                </div>
+                <div class="training-status">
+                    <p><i class="fas fa-database"></i> Continuous LoRA Training Active</p>
+                </div>
+            </section>
+        </main>
+
+        <footer class="main-footer">
+            <div class="footer-segment">
+                <i class="fas fa-bolt"></i> Latency: <span id="latencyVal">240ms</span>
+            </div>
+            <div class="footer-segment">
+                <i class="fas fa-brain"></i> Model: <span class="model-name">Antigravity-Llama-Grounded</span>
+            </div>
+        </footer >
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/voicemanager.js"></script>
+    <script src="js/antigravity-ui.js"></script>
+</body>
+</html>
