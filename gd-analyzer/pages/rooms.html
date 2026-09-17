@@ -214,15 +214,23 @@
                     <!-- Rendered dynamically -->
                 </div>
 
-                <!-- Manual Launch Button (Host) -->
-                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1.5rem; flex-wrap: gap: 1rem;">
+                <!-- Host Launch Controls (Visible ONLY to Host) -->
+                <div id="hostLobbyControls" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                     <span style="font-size: 0.85rem; color: var(--text-muted);">
-                        Waiting for peers to join... Ready to begin early?
+                        Waiting for peers to join... Ready to begin?
                     </span>
                     <button type="button" id="forceStartRoomBtn" class="btn-lagoon btn-lagoon-primary">
                         <i class="fas fa-play"></i>
                         <span>Start Discussion Now</span>
                     </button>
+                </div>
+
+                <!-- Participant Waiting Notice (Visible ONLY to joined peers) -->
+                <div id="participantWaitNotice" style="display: none; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1.5rem; text-align: center;">
+                    <div class="glass-pill" style="display: inline-flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1.75rem; color: var(--lagoon-cyan); font-size: 0.95rem; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.35);">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 1.1rem;"></i>
+                        <span>You are in the room! Waiting for the Host to start the discussion...</span>
+                    </div>
                 </div>
             </div>
 
@@ -235,7 +243,7 @@
 
     <!-- Scripts -->
     <script type="module">
-        import { createHumanRoom, getRoomState, joinHumanRoom, generateProductionJoinUrl, generateWhatsAppShareUrl, getCurrentUser } from '../gd-service.js';
+        import { createHumanRoom, getRoomState, joinHumanRoom, startHumanRoom, generateProductionJoinUrl, generateWhatsAppShareUrl, getCurrentUser } from '../gd-service.js';
 
         let activeRoom = null;
         let countdownInterval = null;
@@ -345,11 +353,27 @@
             }
 
             renderWaitingParticipants(room.participants);
+
+            // Toggle host vs participant controls
+            const isHost = sessionStorage.getItem('isHost_' + room.roomCode) === 'true' ||
+                           sessionStorage.getItem('isHost_' + room.roomCode.replace(/[^A-Z0-9]/g, '')) === 'true' ||
+                           (currentUserName && room.hostName && currentUserName.trim().toLowerCase() === room.hostName.trim().toLowerCase());
+
+            const hostControls = document.getElementById('hostLobbyControls');
+            const partNotice = document.getElementById('participantWaitNotice');
+            if (isHost) {
+                if (hostControls) hostControls.style.display = 'flex';
+                if (partNotice) partNotice.style.display = 'none';
+            } else {
+                if (hostControls) hostControls.style.display = 'none';
+                if (partNotice) partNotice.style.display = 'block';
+            }
+
             startCountdownTimer();
 
             // Setup real-time polling to reflect newly joined friends
             if (pollInterval) clearInterval(pollInterval);
-            pollInterval = setInterval(refreshRoomStatus, 2000);
+            pollInterval = setInterval(refreshRoomStatus, 1500);
         }
 
         function renderWaitingParticipants(participants) {
@@ -387,7 +411,13 @@
                 if (remaining <= 0) {
                     clearInterval(countdownInterval);
                     clearInterval(pollInterval);
-                    transitionToDiscussion();
+                    const isHost = sessionStorage.getItem('isHost_' + activeRoom.roomCode) === 'true' ||
+                                   (currentUserName && activeRoom.hostName && currentUserName.trim().toLowerCase() === activeRoom.hostName.trim().toLowerCase());
+                    if (isHost) {
+                        startHumanRoom(activeRoom.roomCode).then(() => {
+                            transitionToDiscussion();
+                        });
+                    }
                 }
             };
 
@@ -403,11 +433,14 @@
                 renderWaitingParticipants(res.room.participants);
                 document.getElementById('roomCapacityBadge').textContent = `${res.room.participants.length}/${res.room.maxParticipants} Participants`;
 
-                // Only transition if discussion session has been marked 'active'
+                // If host marked room active, peers immediately transition into the discussion together
                 if (res.room.status === 'active') {
                     clearInterval(pollInterval);
                     clearInterval(countdownInterval);
-                    transitionToDiscussion();
+                    showToast('Host has started the discussion! Entering arena...');
+                    setTimeout(() => {
+                        transitionToDiscussion();
+                    }, 400);
                 }
             }
         }
@@ -484,9 +517,12 @@
                 }
             });
 
-            // Force Start Now
-            document.getElementById('forceStartRoomBtn')?.addEventListener('click', () => {
+            // Force Start Now (Host)
+            document.getElementById('forceStartRoomBtn')?.addEventListener('click', async () => {
                 if (confirm('Start the group discussion now with current participants?')) {
+                    if (activeRoom) {
+                        await startHumanRoom(activeRoom.roomCode);
+                    }
                     transitionToDiscussion();
                 }
             });

@@ -797,6 +797,18 @@
         return { success: true, room };
     }
 
+    function startHumanRoom(roomCode) {
+        const clean = (roomCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        try {
+            const rooms = JSON.parse(localStorage.getItem('gd_rooms') || '{}');
+            if (rooms[clean]) {
+                rooms[clean].status = 'active';
+                localStorage.setItem('gd_rooms', JSON.stringify(rooms));
+            }
+        } catch (e) {}
+        return Promise.resolve({ success: true });
+    }
+
     function generateWhatsAppShareUrl(room) {
         const joinUrl = generateProductionJoinUrl(room.roomCode);
         const message = `Join my GD Discussion!\nTopic: ${room.topic}\nRoom Code: ${room.roomCode}\nJoin here:\n${joinUrl}\nThis GD room is available for a limited time.`;
@@ -817,6 +829,7 @@
         createHumanRoom,
         getRoomState,
         joinHumanRoom,
+        startHumanRoom,
         generateProductionJoinUrl,
         generateWhatsAppShareUrl
     };

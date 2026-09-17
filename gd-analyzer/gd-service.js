@@ -1359,6 +1359,36 @@ export function generateProductionJoinUrl(roomCode) {
     return `${baseUrl}/gd-analyzer/pages/rooms.html?code=${cleanCode}`;
 }
 
+// Real-time synchronization helper with API endpoint
+async function syncApiRoom(action, payload) {
+    try {
+        const baseUrl = getProductionBaseUrl();
+        const res = await fetch(`${baseUrl}/api/room`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, ...payload })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            return data.room || null;
+        }
+    } catch (e) {}
+    return null;
+}
+
+async function fetchApiRoom(roomCode) {
+    try {
+        const baseUrl = getProductionBaseUrl();
+        const clean = (roomCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const res = await fetch(`${baseUrl}/api/room?code=${clean}`);
+        if (res.ok) {
+            const data = await res.json();
+            return data.room || null;
+        }
+    } catch (e) {}
+    return null;
+}
+
 export function createHumanRoom(hostName, topic, duration = 180, maxParticipants = 6) {
     const now = Date.now();
     const code = generateRoomCode(now);
@@ -1384,6 +1414,12 @@ export function createHumanRoom(hostName, topic, duration = 180, maxParticipants
         ]
     };
 
+    // Mark current device as host in sessionStorage
+    try {
+        sessionStorage.setItem('isHost_' + code, 'true');
+        sessionStorage.setItem('isHost_' + code.replace(/[^A-Z0-9]/g, ''), 'true');
+    } catch (e) {}
+
     // Save to localStorage room store
     try {
         const rooms = JSON.parse(localStorage.getItem('gd_rooms') || '{}');
@@ -1394,6 +1430,9 @@ export function createHumanRoom(hostName, topic, duration = 180, maxParticipants
     } catch (e) {
         console.warn("localStorage save note:", e);
     }
+
+    // Save to Vercel API room relay
+    syncApiRoom('create', { room }).catch(() => {});
 
     // Save to Firestore database
     try {
@@ -1417,34 +1456,48 @@ export async function getRoomState(roomCode) {
 
     let room = null;
 
-    // 1. Try Firestore database first
+    // 1. Try Vercel API relay first (cross-device real-time sync)
     try {
-        if (db && clean) {
-            const snap = await getDoc(doc(db, "rooms", clean));
-            if (snap.exists()) {
-                room = snap.data();
-            } else if (code !== clean) {
-                const snapCode = await getDoc(doc(db, "rooms", code));
-                if (snapCode.exists()) {
-                    room = snapCode.data();
+        const apiRoom = await fetchApiRoom(clean);
+        if (apiRoom) {
+            room = apiRoom;
+        }
+    } catch (e) {}
+
+    // 2. Try Firestore database
+    if (!room) {
+        try {
+            if (db && clean) {
+                const snap = await getDoc(doc(db, "rooms", clean));
+                if (snap.exists()) {
+                    room = snap.data();
+                } else if (code !== clean) {
+                    const snapCode = await getDoc(doc(db, "rooms", code));
+                    if (snapCode.exists()) {
+                        room = snapCode.data();
+                    }
                 }
             }
+        } catch (dbErr) {
+            console.warn("Firestore room query note:", dbErr);
         }
-    } catch (dbErr) {
-        console.warn("Firestore room query note:", dbErr);
     }
 
-    // 2. Fallback to localStorage
+    // 3. Fallback to localStorage
     if (!room) {
         try {
             const rooms = JSON.parse(localStorage.getItem('gd_rooms') || '{}');
             room = rooms[clean] || rooms[code];
+            if (room) {
+                // Sync host's local room to API relay so joining peers find it
+                syncApiRoom('sync', { room }).catch(() => {});
+            }
         } catch (lsErr) {
             console.warn("localStorage read note:", lsErr);
         }
     }
 
-    // 3. Fallback: Parse room code checksum and timestamp
+    // 4. Fallback: Parse room code checksum and timestamp
     if (!room) {
         if (!clean.startsWith('GD') || clean.length < 7) {
             return { success: false, error: "Invalid GD room. Please check the invitation link." };
@@ -1490,6 +1543,13 @@ export async function getRoomState(roomCode) {
                 }
             ]
         };
+        try {
+            const rooms = JSON.parse(localStorage.getItem('gd_rooms') || '{}');
+            rooms[clean] = room;
+            localStorage.setItem('gd_rooms', JSON.stringify(rooms));
+        } catch {}
+    } else {
+        // Cache found room locally
         try {
             const rooms = JSON.parse(localStorage.getItem('gd_rooms') || '{}');
             rooms[clean] = room;
@@ -1542,15 +1602,17 @@ export async function joinHumanRoom(roomCode, participantName) {
 
     const name = (participantName || "Participant").trim();
     const existing = room.participants.find(p => p.name.toLowerCase() === name.toLowerCase());
+    let newParticipant = null;
     if (!existing) {
         const colors = ['#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#38bdf8', '#6366f1'];
-        room.participants.push({
+        newParticipant = {
             id: 'p_' + Date.now(),
             name: name,
             isHost: false,
             avatarColor: colors[room.participants.length % colors.length],
             joinedAt: Date.now()
-        });
+        };
+        room.participants.push(newParticipant);
 
         // Update local cache
         try {
@@ -1559,6 +1621,9 @@ export async function joinHumanRoom(roomCode, participantName) {
             rooms[room.roomCode.replace(/[^A-Z0-9]/g, '')] = room;
             localStorage.setItem('gd_rooms', JSON.stringify(rooms));
         } catch (e) {}
+
+        // Broadcast to Vercel API relay so host sees the participant instantly
+        syncApiRoom('join', { roomCode: room.roomCode, participant: newParticipant, room }).catch(() => {});
 
         // Update Firestore
         try {
@@ -1572,6 +1637,29 @@ export async function joinHumanRoom(roomCode, participantName) {
     }
 
     return { success: true, room };
+}
+
+export async function startHumanRoom(roomCode) {
+    const clean = (roomCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    try {
+        const rooms = JSON.parse(localStorage.getItem('gd_rooms') || '{}');
+        if (rooms[clean]) {
+            rooms[clean].status = 'active';
+            localStorage.setItem('gd_rooms', JSON.stringify(rooms));
+        }
+    } catch (e) {}
+
+    // Update Vercel API
+    syncApiRoom('start', { roomCode: clean }).catch(() => {});
+
+    // Update Firestore
+    try {
+        if (db) {
+            updateDoc(doc(db, "rooms", clean), { status: 'active' }).catch(() => {});
+        }
+    } catch (e) {}
+
+    return { success: true };
 }
 
 export function generateWhatsAppShareUrl(room) {
